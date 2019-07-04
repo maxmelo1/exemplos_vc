@@ -4,11 +4,9 @@ import os
 from imutils import paths
 from skimage.color import rgb2gray
 import skimage.feature as ft
+import csv
 
-# settings for LBP
-METHOD = 'uniform'
-P = 16
-R = 2
+
 
 class NearestNeighbor:
     def __init__(self):
@@ -37,8 +35,6 @@ class NearestNeighbor:
 
 
 def main():
-    trainPaths  = list(paths.list_images("dogs-vs-cats/train"))
-    testPaths   = list(paths.list_images("dogs-vs-cats/train"))
 
     trainImgs   = []
     testImgs    = []
@@ -46,27 +42,20 @@ def main():
     trainLabels = []
     testLabels  = []
 
-    for path in trainPaths:
-        str = path.split("/")
-        trainLabels.append( 0 if "dog" in str[2] else 1 )
-        #print(str[2])
+    with open( '../gencsv/lbp_train.csv', mode='r' ) as file:
+        reader = csv.reader(file, delimiter=',')
 
-        img  = rgb2gray(mpimg.imread(path))
-        tere = ft.local_binary_pattern(img, P, R, METHOD)
-        trainImgs.append( tere )
+        for row in reader:
+            trainImgs.append( row[0] )
+            trainLabels.append( row[1] )
+            print(row[0])
 
-        #img.close()
+    with open( '../gencsv/lbp_test.csv', mode='r' ) as file:
+        reader = csv.reader(file, delimiter=',')
 
-    for path in testPaths:
-        str = path.split("/")
-        testLabels.append( 0 if "dog" in str[2] else 1 )
-        #print(str[2])
-
-        img  = rgb2gray(mpimg.imread(path))
-        tere = ft.local_binary_pattern(img, P, R, METHOD)
-        testImgs.append( tere )
-
-        #img.close()
+        for row in reader:
+            testImgs.append( row[0] )
+            testLabels.append( row[1] )
 
 
     cl = NearestNeighbor()
