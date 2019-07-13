@@ -5,6 +5,7 @@ from imutils import paths
 from skimage.color import rgb2gray
 import skimage.feature as ft
 import csv
+import pandas as pd
 
 
 
@@ -23,15 +24,27 @@ class NearestNeighbor:
         print("%d amostras"%(X.shape[0]) )
 
         #criando o tipo
-        Ypred = np.zeros(num_test, dtype = self.ytr.dtype)
+        #Ypred = np.zeros(num_test, dtype = self.ytr.dtype)
+        Ypred = np.zeros(num_test, dtype = np.int)
 
+        ind = []
 
         for i in range(num_test):
+            #print("xtr %d x %d " %(len(self.Xtr), len(X) ) )
             distances = np.sum(np.abs(self.Xtr - X[i, :]), axis = 1)
             min_index = np.argmin(distances) #pegar o menor
             Ypred[i]  = self.ytr[min_index] #predizer o label do exemplo mais próximo
 
-        return Ypred
+            ind.append(i+1)
+
+        ret = {
+            "id": ind,
+            "label": Ypred
+        }
+
+        #print(ret)
+
+        return ret
 
 
 def main():
@@ -46,34 +59,31 @@ def main():
         reader = csv.reader(file, delimiter=',')
 
         for row in reader:
-            trainImgs.append( row[0] )
-            trainLabels.append( row[1] )
-            print(row[0])
+            trainImgs.append( row[0:22] )
+            trainLabels.append( row[-1] )
 
     with open( '../gencsv/lbp_test.csv', mode='r' ) as file:
         reader = csv.reader(file, delimiter=',')
 
         for row in reader:
-            testImgs.append( row[0] )
-            testLabels.append( row[1] )
+            testImgs.append( row[0:22] )
+            testLabels.append( row[-1] )
 
 
     cl = NearestNeighbor()
 
-    test = np.array(trainImgs, dtype=np.int64)
+    #test = np.array(trainImgs, dtype=np.float32)
 
-    cl.train( np.array(trainImgs, dtype=np.int64), np.array(trainLabels, dtype=np.int64) )
+    cl.train( np.array(trainImgs, dtype=np.float32), np.array(trainLabels, dtype=np.float32) )
 
-    y = cl.predict( np.array(testImgs, dtype=int) )
+    y = cl.predict( np.array(testImgs, dtype=np.float32) )
 
     acc = 0
 
     print(len(y))
 
-    for i in range(len(y)):
-        acc = acc + 1 if y[i] == testLabels[i] else acc
-
-    print( "Acertos: %d de %d, %f \%" % (acc, len(y), acc/len(y) ) )
+    df = pd.DataFrame(y)
+    df.to_csv("res.csv", index = None, header=True)
 
 
 if __name__ == '__main__':
