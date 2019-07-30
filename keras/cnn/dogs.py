@@ -19,16 +19,13 @@ class ClassifyDogsAndCats:
 
     def train(self):
         #conv 1
-        self.classifier.add( Convolution2D(32, 3,3, input_shape = (64,64,3), activation = 'relu') )
+        self.classifier.add( Convolution2D(32, 3,3, input_shape = (64,64,3) , activation = 'relu') )
 
         #pooling 1
         self.classifier.add(MaxPooling2D(pool_size = (2,2)))
 
-        #flatten 1
-        #self.classifier.add(Flatten())
-
         #conv 2
-        self.classifier.add( Convolution2D(32, 3,3, input_shape = (64,64,3), activation = 'relu') )
+        self.classifier.add( Convolution2D(64, 3,3, input_shape = (64,64,3), activation = 'relu') )
 
         #pooling 2
         self.classifier.add(MaxPooling2D(pool_size = (2,2)))
@@ -71,7 +68,7 @@ class ClassifyDogsAndCats:
         self.classifier.fit_generator(
             self.trainingSet,
             steps_per_epoch = 8000,
-            epochs = 10,
+            epochs = 15,
             validation_data = self.testSet,
             validation_steps = 800,
             use_multiprocessing=True,
