@@ -1,8 +1,7 @@
 from keras.models import Sequential
 from keras.layers import Convolution2D
 from keras.layers import MaxPooling2D
-from keras.layers import Flatten
-from keras.layers import Dense
+from keras.layers import Flatten, Dropout, Dense
 from keras.preprocessing.image import ImageDataGenerator
 from IPython.display import display
 from PIL import Image
@@ -11,41 +10,46 @@ import numpy as np
 import os
 #from keras.models import model_from_json
 from keras.models import load_model
+from keras.regularizers import l2
+
 
 
 class ClassifyDogsAndCats:
     def __init__(self):
         self.classifier = Sequential()
 
-    def train(self):
-        #conv 1
-        self.classifier.add( Convolution2D(32, 3,3, input_shape = (64,64,3) , activation = 'relu') )
-
-        #pooling 1
+    def train(self, init, reg):
+        #block 1
+        #self.classifier.add( Convolution2D(32, (3, 3), input_shape = (64,64,3), strides=(1, 1), kernel_initializer=init, kernel_regularizer=reg, activation = 'relu') )
+        self.classifier.add( Convolution2D(32, (3, 3), input_shape = (64,64,3), strides=(1, 1), activation = 'relu') )
+        self.classifier.add( Convolution2D(32, (3, 3), input_shape = (64,64,3), strides=(1, 1), activation = 'relu') )
         self.classifier.add(MaxPooling2D(pool_size = (2,2)))
+        self.classifier.add(Dropout(0.25))
 
-        #conv 2
-        self.classifier.add( Convolution2D(64, 3,3, input_shape = (64,64,3), activation = 'relu') )
+        #block 2
+        #self.classifier.add( Convolution2D(64, (3, 3), input_shape = (64,64,3), strides=(2, 2) , activation = 'relu') )
+        #self.classifier.add( Convolution2D(64, (3, 3), input_shape = (64,64,3), strides=(2, 2), activation = 'relu') )
+        #self.classifier.add(MaxPooling2D(pool_size = (2,2)))
+        #self.classifier.add(Dropout(0.25))
 
-        #pooling 2
-        self.classifier.add(MaxPooling2D(pool_size = (2,2)))
-
-        #flatten 2
+        #flatten
         self.classifier.add(Flatten())
-
         #fc
-        self.classifier.add( Dense(output_dim = 128, activation = 'relu') )
-        self.classifier.add( Dense(output_dim = 1, activation = 'sigmoid') )
+        self.classifier.add(Dense(output_dim = 128, activation='relu'))
+        #self.classifier.add(Dropout(0.5))
+        self.classifier.add(Dense(output_dim = 1, activation='sigmoid'))
+        #self.classifier.add(Dense(output_dim = 1, activation='softmax'))
 
         #compiling
         self.classifier.compile( optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'] )
-    
+        #self.classifier.compile( optimizer = 'rmsprop', loss = 'binary_crossentropy', metrics = ['accuracy'] )
+
     def augmentDataset(self):
         self.trainDatagen = ImageDataGenerator(
             rescale         = 1./255,
             shear_range     = 0.2,
             zoom_range      = 0.2,
-            horizontal_flip = True 
+            horizontal_flip = True
         )
 
         self.testDatagen = ImageDataGenerator(rescale=1./255)
@@ -68,7 +72,7 @@ class ClassifyDogsAndCats:
         self.classifier.fit_generator(
             self.trainingSet,
             steps_per_epoch = 8000,
-            epochs = 15,
+            epochs = 10,
             validation_data = self.testSet,
             validation_steps = 800,
             use_multiprocessing=True,
@@ -81,9 +85,9 @@ class ClassifyDogsAndCats:
         #    json_file.write(model_json)
         # serialize weights to HDF5
         #self.classifier.save_weights("model.h5")
-        
+
         self.classifier.save("test_model.h5")
-        
+
         print("Saved model to disk")
 
     def loadClassifier(self):
@@ -103,9 +107,9 @@ class ClassifyDogsAndCats:
 
         #compiling
         #self.classifier.compile( optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'] )
-    
+
     def test(self, imageName):
-        
+
         testImage = image.load_img(imageName, target_size = (64,64))
         testImage = image.img_to_array(testImage)
         testImage = np.expand_dims(testImage, axis = 0)
@@ -128,13 +132,13 @@ def main():
         print("0 - sair")
         print("1 - treinar a CNN")
         print("2 - carregar CNN do arquivo")
-        
+
         menu = int(input())
-    
+
 
     if( menu == 1 ):
         #1
-        obj.train()
+        obj.train(init="he_normal", reg=l2(0.0005))
         #2
         obj.augmentDataset()
         #3
@@ -142,10 +146,10 @@ def main():
         #4
     elif menu == 2:
         obj.loadClassifier()
-    
+
     if menu > 0:
         for i in range(1,18):
-            print( obj.test("tests/test"+str(i)+".jpeg" ) ) 
+            print( obj.test("tests/test"+str(i)+".jpeg" ) )
 
 
 
