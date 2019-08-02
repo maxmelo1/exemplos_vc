@@ -11,6 +11,8 @@ import os
 #from keras.models import model_from_json
 from keras.models import load_model
 from keras.regularizers import l2
+from keras import backend as K
+import matplotlib.pyplot as plt
 
 
 
@@ -69,7 +71,7 @@ class ClassifyDogsAndCats:
         )
 
     def fit(self):
-        self.classifier.fit_generator(
+        self.history = self.classifier.fit_generator(
             self.trainingSet,
             steps_per_epoch = 8000,
             epochs = 10,
@@ -88,7 +90,17 @@ class ClassifyDogsAndCats:
 
         self.classifier.save("test_model.h5")
 
-        print("Saved model to disk")
+        print("Model saved to disk")
+
+        print(self.history.history.keys())
+
+        plt.plot(self.history.history['acc'])
+        plt.plot(self.history.history['val_acc'])
+        plt.title('model accuracy')
+        plt.ylabel('accuracy')
+        plt.xlabel('epoch')
+        plt.legend(['train', 'test'], loc='upper left')
+        plt.show()
 
     def loadClassifier(self):
         # load json and create model
@@ -103,7 +115,7 @@ class ClassifyDogsAndCats:
 
         self.classifier = load_model("test_model.h5")
 
-        print("Loaded model from disk")
+        print("Model loaded from disk")
 
         #compiling
         #self.classifier.compile( optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'] )
@@ -116,12 +128,27 @@ class ClassifyDogsAndCats:
 
         result = self.classifier.predict(testImage)
 
-        print("details")
-        print(result)
+        #print(result)
 
         if result[0][0] > 0.5:
             return "dog"
         return "cat"
+
+    def showHeatMap(self):
+        # Grad-CAM algorithm
+        specoutput = self.classifier.output[:, 668]
+        last_conv_layer = self.classifier.get_layer('block5_conv3')
+        grads = K.gradients(specoutput, last_conv_layer.output)[0]
+        pooled_grads = K.mean(grads, axis=(0, 1, 2))
+        iterate = K.function([self.classifier.input], [pooled_grads, last_conv_layer.output[0]])
+        pooled_grads_value, conv_layer_output_value = iterate([image])
+        for i in range(512):
+            conv_layer_output_value[:, :, i] *= pooled_grads_value[i]
+            heatmap=np.mean(conv_layer_output_value, axis=-1) # Heatmap post processing
+        heatmap = np.maximum(heatmap, 0)
+        heatmap /= np.max(heatmap)
+        plt.matshow(heatmap)
+        plt.show()
 
 def main():
     obj = ClassifyDogsAndCats()
@@ -148,9 +175,22 @@ def main():
         obj.loadClassifier()
 
     if menu > 0:
-        for i in range(1,18):
-            print( obj.test("tests/test"+str(i)+".jpeg" ) )
+        template = ["dog","dog","dog","dog","dog","dog","dog","dog","dog","dog","dog","dog","dog","dog","dog","cat","cat","dog",]
+        size = len(template)
 
+        acc = 0
+
+        print("details")
+
+        for i in range(1,size):
+            ans = obj.test("tests/test"+str(i)+".jpeg" )
+            result = "wrong"
+            if(template[i] == ans):
+                result = "right"
+                acc = acc + 1
+            print( "predicted %s - template says %s - %s" %(ans, template[i], result ) )
+
+        print("%.2f accuracy" %(acc /18))
 
 
 if __name__ == '__main__':
