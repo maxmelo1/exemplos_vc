@@ -13,6 +13,8 @@ from keras.models import load_model
 from keras.regularizers import l2
 from keras import backend as K
 import matplotlib.pyplot as plt
+from keras.utils import plot_model
+import pydot as pyd
 
 
 
@@ -73,8 +75,8 @@ class ClassifyDogsAndCats:
     def fit(self):
         self.history = self.classifier.fit_generator(
             self.trainingSet,
-            steps_per_epoch = 8000,
-            epochs = 10,
+            steps_per_epoch = 40,
+            epochs = 2,
             validation_data = self.testSet,
             validation_steps = 800,
             use_multiprocessing=True,
@@ -92,8 +94,11 @@ class ClassifyDogsAndCats:
 
         print("Model saved to disk")
 
-        print(self.history.history.keys())
+        #print(self.history.history.keys())
 
+        self.plotHistory()
+
+    def plotHistory(self):
         plt.plot(self.history.history['acc'])
         plt.plot(self.history.history['val_acc'])
         plt.title('model accuracy')
@@ -101,6 +106,18 @@ class ClassifyDogsAndCats:
         plt.xlabel('epoch')
         plt.legend(['train', 'test'], loc='upper left')
         plt.show()
+
+        #summarize history for loss
+        plt.plot(self.history.history['loss'])
+        plt.plot(self.history.history['val_loss'])
+        plt.title('model loss')
+        plt.ylabel('loss')
+        plt.xlabel('epoch')
+        plt.legend(['train', 'test'], loc='upper left')
+        plt.show()
+
+        plot_model(self.classifier, to_file='model.png')
+
 
     def loadClassifier(self):
         # load json and create model
