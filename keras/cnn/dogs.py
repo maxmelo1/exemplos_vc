@@ -1,7 +1,5 @@
-from keras.models import Sequential
-from keras.layers import Convolution2D
-from keras.layers import MaxPooling2D
-from keras.layers import Flatten, Dropout, Dense
+from keras.models import load_model, Sequential
+from keras.layers import Convolution2D, MaxPooling2D, Flatten, Dropout, Dense
 from keras.preprocessing.image import ImageDataGenerator
 from IPython.display import display
 from PIL import Image
@@ -9,7 +7,6 @@ from keras.preprocessing import image
 import numpy as np
 import os
 #from keras.models import model_from_json
-from keras.models import load_model
 from keras.regularizers import l2
 from keras import backend as K
 import matplotlib.pyplot as plt
