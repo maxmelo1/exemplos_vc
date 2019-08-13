@@ -1,5 +1,5 @@
 from keras.models import load_model, Sequential
-from keras.layers import Convolution2D, MaxPooling2D, Flatten, Dropout, Dense
+from keras.layers import Convolution2D, MaxPooling2D, Flatten, Dropout, Dense, BatchNormalization
 from keras.preprocessing.image import ImageDataGenerator
 from IPython.display import display
 from PIL import Image
@@ -12,6 +12,9 @@ from keras import backend as K
 import matplotlib.pyplot as plt
 from keras.utils import plot_model
 import pydot as pyd
+from keras.callbacks import ModelCheckpoint
+from keras.callbacks import CSVLogger
+from keras.callbacks import EarlyStopping
 
 
 
@@ -20,30 +23,58 @@ class ClassifyDogsAndCats:
         self.classifier = Sequential()
 
     def train(self, init, reg):
-        #block 1
-        #self.classifier.add( Convolution2D(32, (3, 3), input_shape = (64,64,3), strides=(1, 1), kernel_initializer=init, kernel_regularizer=reg, activation = 'relu') )
-        self.classifier.add( Convolution2D(32, (3, 3), input_shape = (64,64,3), strides=(1, 1), activation = 'relu') )
-        self.classifier.add( Convolution2D(32, (3, 3), input_shape = (64,64,3), strides=(1, 1), activation = 'relu') )
-        self.classifier.add(MaxPooling2D(pool_size = (2,2)))
+        # block 1
+        # self.classifier.add( Convolution2D(32, (3, 3), input_shape = (64,64,3), strides=(1, 1), kernel_initializer=init, kernel_regularizer=reg, activation = 'relu') )
+        self.classifier.add(Convolution2D(32, (3, 3), input_shape=(64, 64, 3), activation='relu', name='block1_conv1'))
+        # self.classifier.add( Convolution2D(32, (3, 3), input_shape = (64,64,3), strides=(1, 1), activation = 'relu', name = 'block1_conv2') )
+        self.classifier.add(BatchNormalization())
+        self.classifier.add(MaxPooling2D(pool_size=(2, 2), name='block1_pool'))
         self.classifier.add(Dropout(0.25))
 
-        #block 2
-        #self.classifier.add( Convolution2D(64, (3, 3), input_shape = (64,64,3), strides=(2, 2) , activation = 'relu') )
-        #self.classifier.add( Convolution2D(64, (3, 3), input_shape = (64,64,3), strides=(2, 2), activation = 'relu') )
-        #self.classifier.add(MaxPooling2D(pool_size = (2,2)))
-        #self.classifier.add(Dropout(0.25))
+        # block 2
+        # self.classifier.add( Convolution2D(64, (3, 3), input_shape = (64,64,3), strides=(2, 2) , activation = 'relu') )
+        # self.classifier.add( Convolution2D(64, (3, 3), input_shape = (64,64,3), strides=(2, 2), activation = 'relu') )
+        # self.classifier.add(MaxPooling2D(pool_size = (2,2)))
+        # self.classifier.add(Dropout(0.25))
 
-        #flatten
+        self.classifier.add(Convolution2D(64, (3, 3), input_shape=(64, 64, 3), activation='relu', name='block2_conv1'))
+        self.classifier.add(BatchNormalization())
+        self.classifier.add(MaxPooling2D(pool_size=(2, 2), name='block2_pool'))
+        self.classifier.add(Dropout(0.25))
+
+        # block 3
+        self.classifier.add(Convolution2D(128, (3, 3), input_shape=(64, 64, 3), activation='relu', name='block3_conv1'))
+        self.classifier.add(BatchNormalization())
+        self.classifier.add(MaxPooling2D(pool_size=(2, 2), name='block3_pool'))
+        self.classifier.add(Dropout(0.25))
+
+        # flatten
         self.classifier.add(Flatten())
-        #fc
-        self.classifier.add(Dense(output_dim = 128, activation='relu'))
-        #self.classifier.add(Dropout(0.5))
-        self.classifier.add(Dense(output_dim = 1, activation='sigmoid'))
-        #self.classifier.add(Dense(output_dim = 1, activation='softmax'))
+
+        # fc
+        self.classifier.add(Dense(output_dim=512, activation='relu'))
+        self.classifier.add(BatchNormalization())
+        self.classifier.add(Dropout(0.5))
+        self.classifier.add(Dense(output_dim=1, activation='sigmoid'))
+        # self.classifier.add(Dense(output_dim = 1, activation='softmax'))
 
         #compiling
         self.classifier.compile( optimizer = 'adam', loss = 'binary_crossentropy', metrics = ['accuracy'] )
         #self.classifier.compile( optimizer = 'rmsprop', loss = 'binary_crossentropy', metrics = ['accuracy'] )
+
+        weights_path = 'weights'
+
+
+        checkpoint = ModelCheckpoint(weights_path, monitor='METRIC_TO_MONITOR',
+                                     verbose=1, save_best_only=True, mode='max')
+
+        csv_logger = CSVLogger('./log.out', append=True, separator=';')
+
+        earlystopping = EarlyStopping(monitor='METRIC_TO_MONITOR', verbose=1,
+                                      min_delta=0.01, patience=3, mode='max')
+
+        self.callbacks_list = [checkpoint, csv_logger, earlystopping]
+
 
     def augmentDataset(self):
         self.trainDatagen = ImageDataGenerator(
@@ -72,12 +103,13 @@ class ClassifyDogsAndCats:
     def fit(self):
         self.history = self.classifier.fit_generator(
             self.trainingSet,
-            steps_per_epoch = 40,
-            epochs = 2,
+            steps_per_epoch = 8000,
+            epochs = 10,
             validation_data = self.testSet,
             validation_steps = 800,
             use_multiprocessing=True,
-            workers=4
+            workers=4,
+            callbacks=self.callbacks_list
         )
 
         # serialize model to JSON
@@ -209,3 +241,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

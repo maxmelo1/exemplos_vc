@@ -3,6 +3,9 @@
 ## Objetivos
 
 - Revisar e implementar algoritmos de:
-  - Filtragem espacial.
-  - Filtragem no domínio da frequência.
-  - Classificação por aprendizagem supervisionada.
+  - Filtragem espacial - ok.
+  - CNN simples - ok.
+  - VGG.
+  - R-CNN.
+  - CNN para classificação.
+    - Dogs and cats.
