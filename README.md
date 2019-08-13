@@ -3,7 +3,7 @@
 ## Objetivos
 
 - Revisar e implementar algoritmos de:
-  - Filtragem espacial - ok.
+  - Filtragem espacial - ok. 
   - CNN simples - ok.
   - VGG.
   - R-CNN.

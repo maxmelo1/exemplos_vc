@@ -236,7 +236,7 @@ def main():
                 acc = acc + 1
             print( "predicted %s - template says %s - %s" %(ans, template[i], result ) )
 
-        print("%.2f accuracy" %(acc /18))
+        print("%.2f accuracy" %(acc /18)) 
 
 
 if __name__ == '__main__':
